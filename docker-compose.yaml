@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  # HomeAssistant
+  homeassistant:
+    image: homeassistant/home-assistant:${HA_IMAGE_VERSION:-latest}
+    container_name: ${HA_CONTAINER_NAME:-home-assistant-container}
+    hostname: ${HA_CONTAINER_NAME:-home-assistant-container}
+    networks: [ homeassistant-network ]
+    ports:
+      - ${HA_PORT:-8124}:8123
+    volumes:
+      # Local path where your home assistant config will be stored
+      - ./config/home-assistant:/config
+      - ${HA_MEDIA_PATH:-./media}:/media
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/serial/by-id:/dev/serial/by-id
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyUSB1:/dev/ttyUSB1
+      - /dev/ttyUSB2:/dev/ttyUSB2
+    restart: unless-stopped
+    privileged: true
+
+  # VSCode
+  vscode:
+    image: linuxserver/code-server:${CODE_SERVER_IMAGE_VERSION:-latest}
+    container_name: ${CODE_SERVER_CONTAINER_NAME:-vscode-server-container}
+    hostname: ${CODE_SERVER_CONTAINER_NAME:-vscode-server-container}
+    networks: [ homeassistant-network ]
+    ports:
+      - ${CODE_SERVER_PORT:-8443}:8443
+    environment:
+      PUID: ${CODE_SERVER_PUID:-1000}
+      PGID: ${CODE_SERVER_PGID:-1000}
+      TZ: ${CODE_SERVER_TZ:-Asia/Kuala_Lumpur}
+      PASSWORD: ${CODE_SERVER_PASSWORD:-administrator}
+      HOMEASSISTANT_URL: ${HA_URL:-http://localhost:8123}
+      HOMEASSISTANT_TOKEN: ${HA_TOKEN:-administrator}
+    volumes:
+      - ./config:/config
+    restart: unless-stopped
+
+networks:
+  homeassistant-network:
+    external: True
+    name: ${EXTERNAL_NETWORK:-homelab-local}
